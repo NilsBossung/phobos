@@ -1097,9 +1097,16 @@ template Rebindable(T) if (is(T == class) || is(T == interface) || isDynamicArra
                 opAssign(initializer);
             }
 
-            @property ref inout(T) get() inout pure nothrow
+            @property auto ref get(this This)() pure nothrow
             {
-                return original;
+                static if(is(This == const))
+                {
+                    return Rebindable(original);
+                }
+                else
+                {
+                    return original;
+                }
             }
 
             alias get this;
@@ -1210,6 +1217,17 @@ unittest
     // Issue 12046
     static assert(!__traits(compiles, Rebindable!(int[1])));
     static assert(!__traits(compiles, Rebindable!(const int[1])));
+}
+
+unittest // implicit conversion to mutable
+{
+    alias R = Rebindable!(immutable Object);
+    const R c = new Object;
+    R m1 = c;
+    R m2;
+    m2 = c;
+    static void f(R) {}
+    f(c);
 }
 
 /**
